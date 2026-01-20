@@ -4,14 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>工资计算器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
-
         :root {
-            --primary-color: #4a90e2; /* A softer, modern blue */
+            --primary-color: #4a90e2;
             --secondary-color: #6c757d;
             --background-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            --card-background: rgba(255, 255, 255, 0.9);
+            --card-background: rgba(255, 255, 255, 0.95);
             --text-color: #333;
             --subtle-text-color: #555;
             --border-color: #dce1e6;
@@ -20,7 +19,7 @@
             --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         }
         body {
-            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
             background-image: var(--background-gradient);
             color: var(--text-color);
             margin: 0;
@@ -68,6 +67,36 @@
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
         }
+        .input-group input[readonly] {
+            background-color: #f0f2f5;
+            cursor: not-allowed;
+        }
+        .input-with-button {
+            position: relative;
+        }
+        .input-with-button input {
+            padding-right: 55px;
+        }
+        .calendar-btn {
+            position: absolute;
+            right: 1px;
+            top: 1px;
+            bottom: 1px;
+            height: auto;
+            width: 50px;
+            border: none;
+            background: #f0f2f5;
+            padding: 0 12px;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .calendar-btn:hover { background: #e4e8ec; }
         .inline-group {
             display: flex;
             align-items: center;
@@ -76,20 +105,14 @@
             padding: 10px;
             border-radius: 8px;
         }
-        .inline-group label {
-            margin-bottom: 0;
-        }
+        .inline-group label { margin-bottom: 0; }
         .inline-group p {
             margin: 0;
             font-weight: 700;
             color: var(--primary-color);
             font-size: 1.1rem;
         }
-        .button-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 25px;
-        }
+        .button-group { display: flex; gap: 15px; margin-top: 25px; }
         .button-group button {
             width: 100%;
             padding: 12px;
@@ -106,127 +129,123 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
-        #calc-button {
-            background-color: var(--primary-color);
-        }
-        #clear-button {
-            background-color: var(--secondary-color);
-        }
+        #calc-button { background-color: var(--primary-color); }
+        #clear-button { background-color: var(--secondary-color); }
         #results {
-            margin-top: 30px;
-            padding: 20px;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            background-color: #fdfdff;
-            display: none;
+            margin-top: 30px; padding: 20px; border: 1px solid var(--border-color);
+            border-radius: 12px; background-color: #fdfdff; display: none;
         }
         .result-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            text-align: center;
-            color: var(--primary-color);
+            font-size: 1.5rem; font-weight: 700; margin-bottom: 15px;
+            text-align: center; color: var(--primary-color);
         }
         .final-salary {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--success-color);
-            text-align: center;
-            margin-bottom: 25px;
+            font-size: 2.5rem; font-weight: 700; color: var(--success-color);
+            text-align: center; margin-bottom: 25px;
         }
-        #result-details ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+        #result-details ul { list-style: none; padding: 0; margin: 0; }
         #result-details li {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 5px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 0.95rem;
+            display: flex; justify-content: space-between; padding: 10px 5px;
+            border-bottom: 1px solid #f0f0f0; font-size: 0.95rem; flex-wrap: wrap;
         }
-        #result-details li:nth-child(even) {
-            background-color: #f7f9fc;
-        }
-        #result-details li:last-child {
-            border-bottom: none;
-        }
-        #result-details .value {
-            font-weight: 500;
-        }
-        #result-details .income .value {
-            color: var(--success-color);
-        }
-        #result-details .deduction .value {
-            color: var(--danger-color);
+        #result-details li:nth-child(even) { background-color: #f7f9fc; }
+        #result-details li:last-child { border-bottom: none; }
+        #result-details .value { font-weight: 500; }
+        #result-details .income .value { color: var(--success-color); }
+        #result-details .deduction .value { color: var(--danger-color); }
+        #result-details .info .value { color: var(--primary-color); }
+        #result-details .sub-item { padding-left: 20px; font-size: 0.9em; color: #555; background-color: #f7f9fc !important; }
+        #result-details .calculation-detail {
+            display: block;
+            width: 100%;
+            text-align: right;
+            color: #999;
+            font-size: 0.8em;
+            margin-top: -4px;
+            padding-bottom: 8px;
         }
 
-        .rules-container {
-            margin-top: 30px;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            background-color: #fdfdff;
+        .collapsible-toggle {
+            background: none; border: none; color: var(--primary-color); cursor: pointer;
+            padding: 10px 0; width: 100%; text-align: left; font-size: 1rem; font-weight: 500;
         }
-        .rules-toggle {
-            width: 100%;
-            background: none;
+        .collapsible-toggle::after { content: '▼'; float: right; transition: transform 0.3s ease; }
+        .collapsible-toggle.active::after { transform: rotate(180deg); }
+        .collapsible-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; }
+        .collapsible-panel.active { max-height: 500px; }
+
+        .rules-container { margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 15px; }
+        .rules-details ul { list-style: none; padding:0; }
+        .rules-details li { margin-bottom: 10px; font-size: 0.9rem; }
+        .rules-details code { background-color: #e9ecef; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #c7254e; }
+        .tax-table { overflow-x: auto; margin: 10px 0; }
+        .tax-table table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        .tax-table th, .tax-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+        .tax-table th { background-color: #f2f2f2; }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; visibility: hidden; transition: visibility 0s 0.3s, opacity 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active {
+            opacity: 1; visibility: visible; transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 420px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            transform: scale(0.9); opacity: 0; transition: all 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1); opacity: 1;
+        }
+        .modal-content h3 { margin-top: 0; text-align: center; color: var(--primary-color); }
+        #leave-records-list { list-style: none; padding: 0; margin-top: 15px; max-height: 140px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        #leave-records-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #eee; }
+        #leave-records-list li:last-child { border-bottom: none; }
+        .delete-record { color: var(--danger-color); cursor: pointer; border: none; background: none; font-size: 1.2rem; font-weight: bold; }
+        .modal-actions, .modal-adder { display: flex; gap: 10px; margin-top: 15px; }
+        .modal-actions button, .modal-adder button { border-radius: 8px; border: none; font-size: 1rem; cursor: pointer; padding: 10px;}
+        #add-leave-record-btn { background-color: var(--primary-color); color: white; }
+        #modal-confirm-btn { background-color: var(--success-color); color: white; width: 100%; }
+        #modal-cancel-btn { background-color: var(--secondary-color); color: white; width: 100%; }
+        #leave-records-total { margin-top: 15px; text-align: right; font-weight: bold; font-size: 1.1rem; }
+        .leave-dates-display {
+            font-size: 0.85em;
+            color: var(--secondary-color);
+            margin-top: 6px;
+            padding-left: 5px;
+            display: flex; /* Make it a flex container */
+            align-items: center; /* Vertically align items in the center */
+            flex-wrap: wrap; /* Allow content to wrap if too long */
+        }
+        .clear-leave-btn {
             border: none;
-            padding: 15px;
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: var(--primary-color);
+            background: #e0e0e0;
+            color: #555;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .rules-toggle::after {
-            content: '▼';
-            font-size: 0.8em;
-            transition: transform 0.3s ease;
-        }
-        .rules-toggle.active::after {
-            transform: rotate(180deg);
-        }
-        .rules-details {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease-out, padding 0.4s ease-out;
-            padding: 0 20px;
-        }
-        .rules-details.active {
-            max-height: 500px;
-            padding: 0 20px 20px 20px;
-        }
-        .rules-details ul {
-            list-style: none;
-            padding: 0;
-        }
-        .rules-details li {
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-        .rules-details code {
-            background-color: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #c7254e;
+            margin-left: 5px;
+            font-size: 12px;
+            line-height: 18px;
+            text-align: center;
+            vertical-align: middle;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>薪资计算器</h1>
-
+        
         <div class="input-group inline-group">
             <label for="month-selector">计算月份:</label>
             <select id="month-selector"></select>
             <p><span id="working-days">...</span> 工作日</p>
         </div>
 
-        <!-- Input fields -->
         <div class="input-group">
             <label for="position-salary">岗位工资 (元)</label>
             <input type="number" id="position-salary" placeholder="请输入岗位工资">
@@ -244,24 +263,40 @@
             <input type="number" id="full-attendance-bonus-amount" value="100">
         </div>
         <div class="input-group">
-            <label for="other-allowances">其他津贴/补贴 (元)</label>
-            <input type="number" id="other-allowances" value="0" placeholder="请输入其他津贴/补贴">
+            <label for="annual-leave-hours">年假时长 (小时) (日历选择或手动输入)</label>
+            <div class="input-with-button">
+                <input type="number" id="annual-leave-hours" value="0" placeholder="带薪假,不影响全勤">
+                <button class="calendar-btn" data-target-id="annual-leave-hours" title="通过日历选择">📅</button>
+            </div>
+            <div class="leave-dates-display" id="annual-leave-hours-display"></div>
         </div>
         <div class="input-group">
-            <label for="leave-hours">请假时长 (小时)</label>
-            <input type="number" id="leave-hours" value="0" placeholder="请输入请假时长">
+            <label for="personal-leave-hours">事/病假时长 (小时) (日历选择或手动输入)</label>
+            <div class="input-with-button">
+                <input type="number" id="personal-leave-hours" value="0" placeholder="影响全勤和工资">
+                <button class="calendar-btn" data-target-id="personal-leave-hours" title="通过日历选择">📅</button>
+            </div>
+            <div class="leave-dates-display" id="personal-leave-hours-display"></div>
         </div>
         <div class="input-group">
             <label for="overtime-hours">加班时长 (小时)</label>
-            <input type="number" id="overtime-hours" value="0" placeholder="请输入加班时长">
+            <input type="number" id="overtime-hours" value="0">
         </div>
         <div class="input-group">
             <label for="special-deduction">个税专项附加扣除 (元/月)</label>
-            <input type="number" id="special-deduction" value="1000" placeholder="例如子女教育、住房贷款利息等">
+            <input type="number" id="special-deduction" value="1000">
         </div>
-        <div class="input-group">
-            <label for="other-deductions">其他合规扣款 (元)</label>
-            <input type="number" id="other-deductions" value="0" placeholder="请输入其他扣款">
+        
+        <button class="collapsible-toggle" id="more-options-toggle">更多选项</button>
+        <div class="collapsible-panel" id="more-options-panel">
+            <div class="input-group">
+                <label for="other-allowances">其他津贴/补贴 (元)</label>
+                <input type="number" id="other-allowances" value="0">
+            </div>
+            <div class="input-group">
+                <label for="other-deductions">其他合规扣款 (元)</label>
+                <input type="number" id="other-deductions" value="0">
+            </div>
         </div>
 
         <div class="button-group">
@@ -269,151 +304,80 @@
             <button id="clear-button">清除数据</button>
         </div>
 
-        <div id="results">
-            <p class="result-title">计算结果</p>
-            <p class="final-salary" id="final-salary">¥ 0.00</p>
-            <div id="result-details"></div>
-        </div>
-
+        <div id="results"></div>
         <div class="rules-container">
-            <button class="rules-toggle" id="rules-toggle">计算规则说明</button>
-            <div class="rules-details" id="rules-details">
-                <ul>
+            <button class="collapsible-toggle" id="rules-toggle">计算规则说明</button>
+            <div class="collapsible-panel" id="rules-panel">
+                 <ul>
                     <li><strong>时薪:</strong> <code>岗位工资 / 当月工作日 / 8</code></li>
                     <li><strong>加班费:</strong> <code>时薪 * 加班时长</code></li>
-                    <li><strong>请假扣款:</strong> <code>时薪 * 请假时长</code></li>
-                    <li><strong>全勤奖:</strong> <code>当请假时长为 0 时，获得全额全勤奖</code></li>
-                    <li><strong>餐补:</strong> <code>(工作日 - 请假小时 / 8) * 每日餐补</code></li>
-                    <li><strong>应纳税所得额:</strong> <code>应发工资 - 5000 (起征点) - 社保 (¥470.09) - 专项附加扣除</code></li>
-                    <li><strong>个人所得税:</strong> <code>根据应纳税所得额，按国家7级超额累进税率计算得出</code></li>
+                    <li><strong>事/病假扣款:</strong> <code>时薪 * 事/病假时长</code> (年假不扣款)</li>
+                    <li><strong>全勤奖:</strong> <code>当事/病假时长为 0 时获得</code> (年假不影响)</li>
+                    <li><strong>餐补:</strong> <code>(工作日 - 总请假天数) * 每日餐补</code> (总请假天数 = 向上取整( (年假+事病假)/8 ) )</li>
+                    <li id="tax-rule-details"></li>
                 </ul>
             </div>
         </div>
     </div>
 
+    <div id="leave-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="leave-modal-title">添加请假记录</h3>
+            <div class="modal-adder">
+                <input type="text" id="leave-date-picker" placeholder="选择日期...">
+                <input type="number" id="leave-hours-picker" value="8" style="width: 80px;">
+                <button id="add-leave-record-btn">添加</button>
+            </div>
+            <ul id="leave-records-list"></ul>
+            <p id="leave-records-total">总计: 0 小时</p>
+            <div class="modal-actions">
+                <button id="modal-confirm-btn">确认添加</button>
+                <button id="modal-cancel-btn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/l10n/zh.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const rulesToggle = document.getElementById('rules-toggle');
-            const rulesDetails = document.getElementById('rules-details');
             const monthSelector = document.getElementById('month-selector');
             const workingDaysEl = document.getElementById('working-days');
             const calcButton = document.getElementById('calc-button');
             const clearButton = document.getElementById('clear-button');
             const resultsEl = document.getElementById('results');
-            const finalSalaryEl = document.getElementById('final-salary');
-            const resultDetailsEl = document.getElementById('result-details');
+            
+            setupCollapsible(document.getElementById('rules-toggle'), document.getElementById('rules-panel'));
+            setupCollapsible(document.getElementById('more-options-toggle'), document.getElementById('more-options-panel'));
+
+            const leaveModal = document.getElementById('leave-modal');
+            const leaveModalTitle = document.getElementById('leave-modal-title');
+            const leaveDatePicker = document.getElementById('leave-date-picker');
+            const leaveHoursPicker = document.getElementById('leave-hours-picker');
+            const addLeaveRecordBtn = document.getElementById('add-leave-record-btn');
+            const leaveRecordsList = document.getElementById('leave-records-list');
+            const leaveRecordsTotal = document.getElementById('leave-records-total');
+            const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+            const modalCancelBtn = document.getElementById('modal-cancel-btn');
+            let leaveRecords = [];
+            let currentLeaveTargetInput = null;
+            let fp;
+            try {
+                fp = flatpickr(leaveDatePicker, { locale: "zh", altInput: true, altFormat: "Y-m-d", dateFormat: "Y-m-d" });
+            } catch (e) {
+                console.error("flatpickr initialization failed!", e);
+                document.querySelectorAll('.calendar-btn').forEach(btn => btn.style.display = 'none');
+            }
 
             const SOCIAL_SECURITY_DEDUCTION = 470.09;
             const TAX_THRESHOLD = 5000;
             const LOCAL_STORAGE_KEY = 'salaryCalculatorData';
             const holidayApiCache = {};
-
             const fieldsToPersist = [
                 'position-salary', 'performance-bonus', 'meal-allowance-rate',
-                'full-attendance-bonus-amount', 'other-allowances', 'leave-hours',
-                'overtime-hours', 'special-deduction', 'other-deductions'
+                'full-attendance-bonus-amount', 'other-allowances', 'annual-leave-hours', 
+                'personal-leave-hours', 'overtime-hours', 'special-deduction', 'other-deductions'
             ];
-            const inputElements = fieldsToPersist.map(id => document.getElementById(id));
-
-            function saveData() {
-                const data = {};
-                fieldsToPersist.forEach(id => { data[id] = document.getElementById(id).value; });
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-            }
-
-            function loadData() {
-                const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-                if (savedData) {
-                    const data = JSON.parse(savedData);
-                    fieldsToPersist.forEach(id => {
-                        if (data[id] !== undefined) { document.getElementById(id).value = data[id]; }
-                    });
-                }
-            }
-
-            function clearData() {
-                if (confirm('确定要清除所有输入的数据吗？')) {
-                    fieldsToPersist.forEach(id => {
-                        const element = document.getElementById(id);
-                        element.value = element.defaultValue || '';
-                    });
-                    localStorage.removeItem(LOCAL_STORAGE_KEY);
-                    resultsEl.style.display = 'none';
-                }
-            }
-            
-            rulesToggle.addEventListener('click', () => {
-                rulesToggle.classList.toggle('active');
-                rulesDetails.classList.toggle('active');
-            });
-
-            async function getHolidayData(year) {
-                if (holidayApiCache[year]) return holidayApiCache[year];
-                try {
-                    const response = await fetch(`https://api.jiejiariapi.com/v1/holidays/${year}`);
-                    if (!response.ok) throw new Error(`API request failed`);
-                    const data = await response.json();
-                    holidayApiCache[year] = data;
-                    return data;
-                } catch (error) {
-                    console.error(`Failed to fetch holiday data for year ${year}:`, error);
-                    holidayApiCache[year] = {};
-                    return {};
-                }
-            }
-
-            async function getWorkingDays(year, month) {
-                const yearData = await getHolidayData(year);
-                const daysInMonth = new Date(year, month, 0).getDate();
-                let count = 0;
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const d = new Date(year, month - 1, day);
-                    const dayOfWeek = d.getDay();
-                    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const holidayInfo = yearData[dateStr];
-                    let isWorkday = holidayInfo ? !holidayInfo.isOffDay : (dayOfWeek !== 0 && dayOfWeek !== 6);
-                    if (isWorkday) count++;
-                }
-                return count;
-            }
-
-            async function populateMonths() {
-                const now = new Date();
-                const currentYear = now.getFullYear();
-                const currentMonth = now.getMonth() + 1;
-                monthSelector.innerHTML = '';
-                for (let y = currentYear - 2; y <= currentYear + 2; y++) {
-                    for (let m = 1; m <= 12; m++) {
-                        const option = document.createElement('option');
-                        option.value = `${y}-${m}`;
-                        option.textContent = `${y}年 ${m}月`;
-                        if (y === currentYear && m === currentMonth) option.selected = true;
-                        monthSelector.appendChild(option);
-                    }
-                }
-                await updateWorkingDays();
-            }
-
-            async function updateWorkingDays() {
-                const [year, month] = monthSelector.value.split('-').map(Number);
-                workingDaysEl.textContent = '...';
-                const days = await getWorkingDays(year, month);
-                workingDaysEl.textContent = days;
-            }
-            
-            function calculateTax(taxableIncome) {
-                if (taxableIncome <= 0) return 0;
-                const annualTaxableIncome = taxableIncome * 12;
-                let tax = 0;
-                if (annualTaxableIncome <= 36000) tax = annualTaxableIncome * 0.03;
-                else if (annualTaxableIncome <= 144000) tax = annualTaxableIncome * 0.10 - 2520;
-                else if (annualTaxableIncome <= 300000) tax = annualTaxableIncome * 0.20 - 16920;
-                else if (annualTaxableIncome <= 420000) tax = annualTaxableIncome * 0.25 - 31920;
-                else if (annualTaxableIncome <= 660000) tax = annualTaxableIncome * 0.30 - 52920;
-                else if (annualTaxableIncome <= 960000) tax = annualTaxableIncome * 0.35 - 85920;
-                else tax = annualTaxableIncome * 0.45 - 181920;
-                return tax / 12;
-            }
 
             function calculate() {
                 const values = {};
@@ -421,40 +385,371 @@
                 if (values['position-salary'] === 0) { alert('请输入岗位工资！'); return; }
                 const workingDays = parseInt(workingDaysEl.textContent, 10);
                 if (isNaN(workingDays) || workingDays === 0) { alert("当月没有工作日或工作日正在加载，无法计算！"); return; }
+                
                 const hourlyRate = (values['position-salary'] / workingDays) / 8;
-                const fullAttendanceBonus = values['leave-hours'] === 0 ? values['full-attendance-bonus-amount'] : 0;
-                const equivalentLeaveDays = values['leave-hours'] / 8;
-                const mealAllowance = Math.max(0, workingDays - equivalentLeaveDays) * values['meal-allowance-rate'];
+
+                const annualLeaveInput = document.getElementById('annual-leave-hours');
+                const personalLeaveInput = document.getElementById('personal-leave-hours');
+
+                const allCalendarDates = new Set();
+                let manualTotalHours = 0;
+
+                const annualRecordsStr = annualLeaveInput.dataset.leaveRecords;
+                if (annualRecordsStr && annualRecordsStr !== '[]') {
+                    const annualRecords = JSON.parse(annualRecordsStr);
+                    annualRecords.forEach(r => allCalendarDates.add(r.date));
+                } else {
+                    manualTotalHours += values['annual-leave-hours'];
+                }
+
+                const personalRecordsStr = personalLeaveInput.dataset.leaveRecords;
+                if (personalRecordsStr && personalRecordsStr !== '[]') {
+                    const personalRecords = JSON.parse(personalRecordsStr);
+                    personalRecords.forEach(r => allCalendarDates.add(r.date));
+                } else {
+                    manualTotalHours += values['personal-leave-hours'];
+                }
+
+                const manualLeaveDays = Math.ceil(manualTotalHours / 8);
+                const daysWithLeave = allCalendarDates.size + manualLeaveDays;
+                
+                const fullAttendanceBonus = values['personal-leave-hours'] === 0 ? values['full-attendance-bonus-amount'] : 0;
+                const mealAllowance = Math.max(0, workingDays - daysWithLeave) * values['meal-allowance-rate'];
                 const overtimePay = values['overtime-hours'] * hourlyRate;
-                const leaveDeductionAmount = values['leave-hours'] * hourlyRate;
+                const leaveDeductionAmount = values['personal-leave-hours'] * hourlyRate;
+                
                 const grossIncome = (values['position-salary'] - leaveDeductionAmount) + values['performance-bonus'] + mealAllowance + fullAttendanceBonus + values['other-allowances'] + overtimePay;
                 const incomeForTax = grossIncome - SOCIAL_SECURITY_DEDUCTION - values['special-deduction'] - TAX_THRESHOLD;
-                const tax = calculateTax(incomeForTax);
-                const finalSalary = grossIncome - SOCIAL_SECURITY_DEDUCTION - tax - values['other-deductions'];
+                const taxDetails = calculateTax(incomeForTax);
+                
+                const finalSalary = grossIncome - SOCIAL_SECURITY_DEDUCTION - taxDetails.monthlyTax - values['other-deductions'];
+                
                 resultsEl.style.display = 'block';
-                finalSalaryEl.textContent = `¥ ${finalSalary.toFixed(2)}`;
-                resultDetailsEl.innerHTML = `<ul>
-                        <li class="income"><span>(+) 岗位工资</span><span class="value">¥ ${values['position-salary'].toFixed(2)}</span></li>
-                        <li class="income"><span>(+) 绩效奖金</span><span class="value">¥ ${values['performance-bonus'].toFixed(2)}</span></li>
-                        <li class="income"><span>(+) 全勤奖</span><span class="value">¥ ${fullAttendanceBonus.toFixed(2)}</span></li>
-                        <li class="income"><span>(+) 餐补</span><span class="value">¥ ${mealAllowance.toFixed(2)}</span></li>
-                        <li class="income"><span>(+) 其他补贴</span><span class="value">¥ ${values['other-allowances'].toFixed(2)}</span></li>
-                        <li class="income"><span>(+) 加班费</span><span class="value">¥ ${overtimePay.toFixed(2)}</span></li>
-                        <li class="deduction"><span>(-) 请假扣款</span><span class="value">- ¥ ${leaveDeductionAmount.toFixed(2)}</span></li>
-                        <li style="border-top: 1px solid var(--border-color); font-weight: bold;">
-                            <span>应发工资</span><span class="value">¥ ${grossIncome.toFixed(2)}</span>
-                        </li>
-                        <li class="deduction"><span>(-) 社保个人部分</span><span class="value">- ¥ ${SOCIAL_SECURITY_DEDUCTION.toFixed(2)}</span></li>
-                        <li class="deduction"><span>(-) 个人所得税</span><span class="value">- ¥ ${tax.toFixed(2)}</span></li>
-                        <li class="deduction"><span>(-) 其他合规扣款</span><span class="value">- ¥ ${values['other-deductions'].toFixed(2)}</span></li>
-                    </ul>`;
+                resultsEl.innerHTML = `
+                    <p class="result-title">计算结果</p>
+                    <p class="final-salary">¥ ${finalSalary.toFixed(2)}</p>
+                    <div id="result-details">
+                        <ul>
+                            <li class="info">
+                                <span>时薪</span>
+                                <span class="value">¥ ${hourlyRate.toFixed(2)}</span>
+                                <small class="calculation-detail">(${values['position-salary']} / ${workingDays} / 8)</small>
+                            </li>
+                            <li class="income">
+                                <span>(+) 岗位工资</span>
+                                <span class="value">¥ ${values['position-salary'].toFixed(2)}</span>
+                            </li>
+                            <li class="income">
+                                <span>(+) 绩效奖金</span>
+                                <span class="value">¥ ${values['performance-bonus'].toFixed(2)}</span>
+                            </li>
+                            <li class="income">
+                                <span>(+) 全勤奖</span>
+                                <span class="value">¥ ${fullAttendanceBonus.toFixed(2)}</span>
+                                ${fullAttendanceBonus > 0 ? '<small class="calculation-detail">(无事/病假)</small>' : ''}
+                            </li>
+                            <li class="income">
+                                <span>(+) 餐补</span>
+                                <span class="value">¥ ${mealAllowance.toFixed(2)}</span>
+                                <small class="calculation-detail">((${workingDays} - ${daysWithLeave})天 * ${values['meal-allowance-rate']}元/天)</small>
+                            </li>
+                            <li class="income">
+                                <span>(+) 其他补贴</span>
+                                <span class="value">¥ ${values['other-allowances'].toFixed(2)}</span>
+                            </li>
+                            <li class="income">
+                                <span>(+) 加班费</span>
+                                <span class="value">¥ ${overtimePay.toFixed(2)}</span>
+                                <small class="calculation-detail">(${hourlyRate.toFixed(2)}元/时 * ${values['overtime-hours']}小时)</small>
+                            </li>
+                            <li class="deduction">
+                                <span>(-) 事/病假扣款</span>
+                                <span class="value">- ¥ ${leaveDeductionAmount.toFixed(2)}</span>
+                                <small class="calculation-detail">(${hourlyRate.toFixed(2)}元/时 * ${values['personal-leave-hours']}小时)</small>
+                            </li>
+                            <li style="border-top: 1px solid var(--border-color); font-weight: bold;">
+                                <span>应发工资</span>
+                                <span class="value">¥ ${grossIncome.toFixed(2)}</span>
+                            </li>
+                            <li class="deduction">
+                                <span>(-) 社保个人部分</span>
+                                <span class="value">- ¥ ${SOCIAL_SECURITY_DEDUCTION.toFixed(2)}</span>
+                            </li>
+                            <li class="sub-item">
+                                <span>&nbsp;&nbsp;&nbsp;&nbsp;应纳税所得额</span>
+                                <span class="value">¥ ${Math.max(0, incomeForTax).toFixed(2)}</span>
+                                <small class="calculation-detail">(${grossIncome.toFixed(2)} - ${SOCIAL_SECURITY_DEDUCTION} - ${values['special-deduction']} - ${TAX_THRESHOLD})</small>
+                            </li>
+                            <li class="sub-item">
+                                <span>&nbsp;&nbsp;&nbsp;&nbsp;适用税率 / 速算扣除</span>
+                                <span class="value">${taxDetails.rate}% / ${taxDetails.quickDeduction}</span>
+                            </li>
+                            <li class="deduction" style="font-weight: bold;">
+                                <span>(-) 本月预缴个税</span>
+                                <span class="value">- ¥ ${taxDetails.monthlyTax.toFixed(2)}</span>
+                                <small class="calculation-detail">(年累计税额 ¥${(annualTaxableIncome > 0 ? annualTax : 0).toFixed(2)} / 12)</small>
+                            </li>
+                            <li class="deduction">
+                                <span>(-) 其他合规扣款</span>
+                                <span class="value">- ¥ ${values['other-deductions'].toFixed(2)}</span>
+                            </li>
+                        </ul>
+                    </div>`;
             }
 
+            function calculateTax(taxableIncome) {
+                if (taxableIncome <= 0) return { monthlyTax: 0, rate: 0, quickDeduction: 0 };
+                const annualTaxableIncome = taxableIncome * 12;
+                let rate = 0, quickDeduction = 0, annualTax = 0;
+                if (annualTaxableIncome <= 36000) { rate = 3; quickDeduction = 0; annualTax = annualTaxableIncome * 0.03 - quickDeduction;
+                } else if (annualTaxableIncome <= 144000) { rate = 10; quickDeduction = 2520; annualTax = annualTaxableIncome * 0.10 - quickDeduction;
+                } else if (annualTaxableIncome <= 300000) { rate = 20; quickDeduction = 16920; annualTax = annualTaxableIncome * 0.20 - quickDeduction;
+                } else if (annualTaxableIncome <= 420000) { rate = 25; quickDeduction = 31920; annualTax = annualTaxableIncome * 0.25 - quickDeduction;
+                } else if (annualTaxableIncome <= 660000) { rate = 30; quickDeduction = 52920; annualTax = annualTaxableIncome * 0.30 - quickDeduction;
+                } else if (annualTaxableIncome <= 960000) { rate = 35; quickDeduction = 85920; annualTax = annualTaxableIncome * 0.35 - quickDeduction;
+                } else { rate = 45; quickDeduction = 181920; annualTax = annualTaxableIncome * 0.45 - quickDeduction; }
+                return { monthlyTax: annualTax / 12, rate, quickDeduction };
+            }
+
+            function saveData() {
+                const data = {};
+                fieldsToPersist.forEach(id => { data[id] = document.getElementById(id).value; });
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+            }
+            function loadData() {
+                const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    fieldsToPersist.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && data[id] !== undefined) { el.value = data[id]; }
+                    });
+                }
+            }
+            function clearData() {
+                if (confirm('确定要清除所有输入的数据吗？')) {
+                    fieldsToPersist.forEach(id => {
+                        const element = document.getElementById(id);
+                        element.value = element.defaultValue || '';
+                         if (id.includes('leave-hours')) {
+                            element.readOnly = false;
+                            element.dataset.leaveRecords = '';
+                            const displayEl = document.getElementById(id + '-display');
+                            if (displayEl) displayEl.innerHTML = '';
+                        }
+                    });
+                    localStorage.removeItem(LOCAL_STORAGE_KEY);
+                    resultsEl.style.display = 'none';
+                    document.getElementById('meal-allowance-rate').value = 12;
+                    document.getElementById('full-attendance-bonus-amount').value = 100;
+                    document.getElementById('special-deduction').value = 1000;
+                    document.getElementById('annual-leave-hours').value = 0;
+                    document.getElementById('personal-leave-hours').value = 0;
+                    document.getElementById('overtime-hours').value = 0;
+                    document.getElementById('other-allowances').value = 0;
+                    document.getElementById('other-deductions').value = 0;
+                }
+            }
+            
+            function setupCollapsible(toggleEl, panelEl) {
+                if (!toggleEl || !panelEl) return;
+                toggleEl.addEventListener('click', () => {
+                    toggleEl.classList.toggle('active');
+                    panelEl.classList.toggle('active');
+                });
+            }
+
+            function openLeaveModal(targetInput) {
+                if (!targetInput) return;
+                currentLeaveTargetInput = targetInput;
+                const label = document.querySelector(`label[for=${targetInput.id}]`);
+                leaveModalTitle.textContent = `添加 ${label ? label.textContent.split('(')[0].trim() : '请假记录'}`;
+                leaveRecords = [];
+                renderLeaveRecords();
+                leaveModal.classList.add('active');
+            }
+            function closeLeaveModal() {
+                const displayEl = document.getElementById(currentLeaveTargetInput.id + '-display');
+                if (currentLeaveTargetInput && (!displayEl || !displayEl.innerHTML)) {
+                   currentLeaveTargetInput.readOnly = false;
+                }
+                leaveModal.classList.remove('active');
+                if (fp) fp.clear();
+            }
+            function addLeaveRecord() {
+                const selectedDate = fp.selectedDates[0];
+                if (!selectedDate) { alert("请先选择一个日期"); return; }
+                const hours = parseFloat(leaveHoursPicker.value) || 0;
+                if (hours <= 0) { alert("请输入有效的小时数"); return; }
+                leaveRecords.push({ id: Date.now(), date: flatpickr.formatDate(selectedDate, "Y-m-d"), hours });
+                leaveRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
+                renderLeaveRecords();
+                fp.clear();
+                leaveDatePicker.focus();
+            }
+            function deleteLeaveRecord(recordId) {
+                leaveRecords = leaveRecords.filter(r => r.id !== recordId);
+                renderLeaveRecords();
+            }
+            function renderLeaveRecords() {
+                leaveRecordsList.innerHTML = '';
+                let total = 0;
+                leaveRecords.forEach(record => {
+                    const li = document.createElement('li');
+                    li.textContent = `${record.date}: ${record.hours} 小时`;
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '×';
+                    deleteBtn.className = 'delete-record';
+                    deleteBtn.title = '删除此条记录';
+                    deleteBtn.onclick = () => deleteLeaveRecord(record.id);
+                    li.appendChild(deleteBtn);
+                    leaveRecordsList.appendChild(li);
+                    total += record.hours;
+                });
+                leaveRecordsTotal.textContent = `总计: ${total} 小时`;
+            }
+            function confirmLeave() {
+                const totalHours = leaveRecords.reduce((sum, rec) => sum + rec.hours, 0);
+                if (currentLeaveTargetInput) {
+                    currentLeaveTargetInput.value = totalHours;
+                    currentLeaveTargetInput.readOnly = true;
+                    currentLeaveTargetInput.dataset.leaveRecords = JSON.stringify(leaveRecords);
+                    
+                    const displayId = currentLeaveTargetInput.id + '-display';
+                    const displayEl = document.getElementById(displayId);
+                    if (displayEl) {
+                        const dateStrings = leaveRecords.map(r => r.date.split('-').slice(1).join('/'));
+                        const uniqueDays = new Set(leaveRecords.map(r => r.date)).size;
+                        displayEl.innerHTML = `已选 ${uniqueDays} 天 (${dateStrings.join(', ')}) <button type="button" class="clear-leave-btn" data-target-id="${currentLeaveTargetInput.id}" title="清除日历选择">×</button>`;
+                    }
+                    saveData();
+                }
+                closeLeaveModal();
+            }
+
+            async function getHolidayData(year) {
+                if (holidayApiCache[year]) return holidayApiCache[year];
+                try {
+                    const response = await fetch(`https://api.jiejiariapi.com/v1/holidays/${year}`);
+                    if (!response.ok) throw new Error(`API request failed`);
+                    holidayApiCache[year] = await response.json();
+                } catch (error) {
+                    console.error(`Failed to fetch holiday data for year ${year}:`, error);
+                    holidayApiCache[year] = {};
+                }
+                return holidayApiCache[year];
+            }
+            async function getWorkingDays(year, month) {
+                const yearData = await getHolidayData(year);
+                let count = 0;
+                const daysInMonth = new Date(year, month, 0).getDate();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const d = new Date(year, month - 1, day);
+                    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const holidayInfo = yearData[dateStr];
+                    if (holidayInfo ? !holidayInfo.isOffDay : (d.getDay() !== 0 && d.getDay() !== 6)) count++;
+                }
+                return count;
+            }
+            async function populateMonths() {
+                const now = new Date();
+                monthSelector.innerHTML = '';
+                for (let y = now.getFullYear() - 2; y <= now.getFullYear() + 2; y++) {
+                    for (let m = 1; m <= 12; m++) {
+                        const option = document.createElement('option');
+                        option.value = `${y}-${m}`;
+                        option.textContent = `${y}年 ${m}月`;
+                        if (y === now.getFullYear() && m === now.getMonth() + 1) option.selected = true;
+                        monthSelector.appendChild(option);
+                    }
+                }
+                await updateWorkingDays();
+            }
+            async function updateWorkingDays() {
+                const [year, month] = monthSelector.value.split('-').map(Number);
+                workingDaysEl.textContent = '...';
+                workingDaysEl.textContent = await getWorkingDays(year, month);
+            }
+            
+            function renderTaxRuleDetails() {
+                 const taxRuleEl = document.getElementById('tax-rule-details');
+                if (!taxRuleEl) return;
+                taxRuleEl.innerHTML = `<strong>个人所得税:</strong>
+                    <p style="margin: 5px 0; font-size: 0.9em;">1. 先计算应纳税所得额: <br><code>应发工资 - 5000起征点 - 社保 - 专项附加扣除</code></p>
+                    <p style="margin: 5px 0; font-size: 0.9em;">2. 根据年度应纳税所得额 (月度 * 12)，对照下表确定税率和速算扣除数。</p>
+                    <div class="tax-table">
+                        <table>
+                            <thead><tr><th>级别</th><th>年度应纳税所得额</th><th>税率(%)</th><th>速算扣除数</th></tr></thead>
+                            <tbody>
+                                <tr><td>1</td><td>不超过36,000元</td><td>3</td><td>0</td></tr>
+                                <tr><td>2</td><td>36,000元 至 144,000元</td><td>10</td><td>2,520</td></tr>
+                                <tr><td>3</td><td>144,000元 至 300,000元</td><td>20</td><td>16,920</td></tr>
+                                <tr><td>4</td><td>300,000元 至 420,000元</td><td>25</td><td>31,920</td></tr>
+                                <tr><td>5</td><td>420,000元 至 660,000元</td><td>30</td><td>52,920</td></tr>
+                                <tr><td>6</td><td>660,000元 至 960,000元</td><td>35</td><td>85,920</td></tr>
+                                <tr><td>7</td><td>超过960,000元</td><td>45</td><td>181,920</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="font-size:0.8em; color:#888;">(注: 本工具采用年税额除以12的平均估算法，与财务实际的“累计预扣法”在年度中可能存在细微差异，但年度总税额一致。)</p>
+                `;
+            }
+
+            document.querySelectorAll('.calendar-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetId = e.currentTarget.dataset.targetId;
+                    const targetInput = document.getElementById(targetId);
+                    openLeaveModal(targetInput);
+                });
+            });
+            
+            addLeaveRecordBtn.addEventListener('click', addLeaveRecord);
+            modalConfirmBtn.addEventListener('click', confirmLeave);
+            modalCancelBtn.addEventListener('click', closeLeaveModal);
             monthSelector.addEventListener('change', updateWorkingDays);
             calcButton.addEventListener('click', calculate);
             clearButton.addEventListener('click', clearData);
-            inputElements.forEach(el => el.addEventListener('input', saveData));
+            fieldsToPersist.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.addEventListener('input', saveData);
+            });
+            
+            ['annual-leave-hours', 'personal-leave-hours'].forEach(id => {
+                const inputEl = document.getElementById(id);
+                if (inputEl) {
+                    inputEl.addEventListener('input', () => {
+                        if (document.activeElement === inputEl) { 
+                            inputEl.readOnly = false;
+                            inputEl.dataset.leaveRecords = '';
+                            const displayEl = document.getElementById(id + '-display');
+                            if (displayEl) {
+                                displayEl.innerHTML = '';
+                            }
+                        }
+                    });
+                }
+            });
 
+            document.querySelector('.container').addEventListener('click', function(e) {
+                if (e.target.classList.contains('clear-leave-btn')) {
+                    e.preventDefault();
+                    const targetId = e.target.dataset.targetId;
+                    const inputEl = document.getElementById(targetId);
+                    const displayEl = document.getElementById(targetId + '-display');
+                    
+                    if (inputEl) {
+                        inputEl.value = 0;
+                        inputEl.readOnly = false;
+                        inputEl.dataset.leaveRecords = '';
+                    }
+                    if (displayEl) {
+                        displayEl.innerHTML = '';
+                    }
+                    saveData();
+                }
+            });
+
+            renderTaxRuleDetails();
             loadData();
             populateMonths();
         });
