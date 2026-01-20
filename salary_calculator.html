@@ -396,16 +396,20 @@
 
                 const annualRecordsStr = annualLeaveInput.dataset.leaveRecords;
                 if (annualRecordsStr && annualRecordsStr !== '[]') {
-                    const annualRecords = JSON.parse(annualRecordsStr);
-                    annualRecords.forEach(r => allCalendarDates.add(r.date));
+                    try {
+                        const annualRecords = JSON.parse(annualRecordsStr);
+                        annualRecords.forEach(r => allCalendarDates.add(r.date));
+                    } catch(e) { console.error("Error parsing annual leave records", e); }
                 } else {
                     manualTotalHours += values['annual-leave-hours'];
                 }
 
                 const personalRecordsStr = personalLeaveInput.dataset.leaveRecords;
                 if (personalRecordsStr && personalRecordsStr !== '[]') {
-                    const personalRecords = JSON.parse(personalRecordsStr);
-                    personalRecords.forEach(r => allCalendarDates.add(r.date));
+                     try {
+                        const personalRecords = JSON.parse(personalRecordsStr);
+                        personalRecords.forEach(r => allCalendarDates.add(r.date));
+                    } catch(e) { console.error("Error parsing personal leave records", e); }
                 } else {
                     manualTotalHours += values['personal-leave-hours'];
                 }
@@ -487,7 +491,7 @@
                             <li class="deduction" style="font-weight: bold;">
                                 <span>(-) 本月预缴个税</span>
                                 <span class="value">- ¥ ${taxDetails.monthlyTax.toFixed(2)}</span>
-                                <small class="calculation-detail">(年累计税额 ¥${(annualTaxableIncome > 0 ? annualTax : 0).toFixed(2)} / 12)</small>
+                                <small class="calculation-detail">(年累计税额 ¥${(taxDetails.annualTaxableIncome > 0 ? taxDetails.annualTax : 0).toFixed(2)} / 12)</small>
                             </li>
                             <li class="deduction">
                                 <span>(-) 其他合规扣款</span>
@@ -498,7 +502,7 @@
             }
 
             function calculateTax(taxableIncome) {
-                if (taxableIncome <= 0) return { monthlyTax: 0, rate: 0, quickDeduction: 0 };
+                if (taxableIncome <= 0) return { monthlyTax: 0, rate: 0, quickDeduction: 0, annualTax: 0, annualTaxableIncome: 0 };
                 const annualTaxableIncome = taxableIncome * 12;
                 let rate = 0, quickDeduction = 0, annualTax = 0;
                 if (annualTaxableIncome <= 36000) { rate = 3; quickDeduction = 0; annualTax = annualTaxableIncome * 0.03 - quickDeduction;
@@ -508,7 +512,7 @@
                 } else if (annualTaxableIncome <= 660000) { rate = 30; quickDeduction = 52920; annualTax = annualTaxableIncome * 0.30 - quickDeduction;
                 } else if (annualTaxableIncome <= 960000) { rate = 35; quickDeduction = 85920; annualTax = annualTaxableIncome * 0.35 - quickDeduction;
                 } else { rate = 45; quickDeduction = 181920; annualTax = annualTaxableIncome * 0.45 - quickDeduction; }
-                return { monthlyTax: annualTax / 12, rate, quickDeduction };
+                return { monthlyTax: annualTax / 12, rate, quickDeduction, annualTax, annualTaxableIncome };
             }
 
             function saveData() {
