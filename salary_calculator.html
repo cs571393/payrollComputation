@@ -104,7 +104,20 @@
             background-color: #f7f9fc;
             padding: 10px;
             border-radius: 8px;
+            flex-wrap: wrap; /* Allow items to wrap to next line */
         }
+        .inline-group > * { /* Apply to all direct children */
+            margin-bottom: 10px;
+        }
+        .inline-group > *:last-child {
+            margin-bottom: 0; /* No margin for the last child */
+        }
+        /* New manual input for working days */
+        .input-group #manual-working-days-group {
+             margin-left: 0 !important; /* Override inline style to allow natural wrapping */
+        }
+
+
         .inline-group label { margin-bottom: 0; }
         .inline-group p {
             margin: 0;
