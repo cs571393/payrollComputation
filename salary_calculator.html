@@ -172,7 +172,7 @@
         .collapsible-toggle::after { content: '▼'; float: right; transition: transform 0.3s ease; }
         .collapsible-toggle.active::after { transform: rotate(180deg); }
         .collapsible-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; }
-        .collapsible-panel.active { max-height: 500px; }
+        .collapsible-panel.active { max-height: 1000px; }
 
         .rules-container { margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 15px; }
         .rules-details ul { list-style: none; padding:0; }
@@ -220,19 +220,22 @@
             align-items: center; /* Vertically align items in the center */
             flex-wrap: wrap; /* Allow content to wrap if too long */
         }
+        .leave-text-content {
+            /* Removed line-height to allow natural flow */
+        }
         .clear-leave-btn {
             border: none;
             background: #e0e0e0;
             color: #555;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
+            border-radius: 4px; /* Square button with slight rounding */
+            width: 16px; /* Smaller square button */
+            height: 16px;
             cursor: pointer;
             margin-left: 5px;
-            font-size: 12px;
-            line-height: 18px;
-            text-align: center;
-            vertical-align: middle;
+            font-size: 10px; /* Smaller font for 'x' */
+            display: flex; /* Use flexbox for centering content */
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
@@ -244,6 +247,11 @@
             <label for="month-selector">计算月份:</label>
             <select id="month-selector"></select>
             <p><span id="working-days">...</span> 工作日</p>
+            <!-- New manual input for working days -->
+            <div id="manual-working-days-group" style="display: none; margin-left: 10px;">
+                <label for="manual-working-days-input" style="margin-right: 5px;">手动输入:</label>
+                <input type="number" id="manual-working-days-input" value="" style="width: 60px;">
+            </div>
         </div>
 
         <div class="input-group">
@@ -281,6 +289,10 @@
         <div class="input-group">
             <label for="overtime-hours">加班时长 (小时)</label>
             <input type="number" id="overtime-hours" value="0">
+        </div>
+        <div class="input-group">
+            <label for="social-security-deduction">社保个人部分 (元)</label>
+            <input type="number" id="social-security-deduction" value="470.09">
         </div>
         <div class="input-group">
             <label for="special-deduction">个税专项附加扣除 (元/月)</label>
@@ -376,15 +388,23 @@
             const fieldsToPersist = [
                 'position-salary', 'performance-bonus', 'meal-allowance-rate',
                 'full-attendance-bonus-amount', 'other-allowances', 'annual-leave-hours', 
-                'personal-leave-hours', 'overtime-hours', 'special-deduction', 'other-deductions'
+                'personal-leave-hours', 'overtime-hours', 'social-security-deduction', 'special-deduction', 'other-deductions'
             ];
 
             function calculate() {
                 const values = {};
                 fieldsToPersist.forEach(id => { values[id] = parseFloat(document.getElementById(id).value) || 0; });
                 if (values['position-salary'] === 0) { alert('请输入岗位工资！'); return; }
-                const workingDays = parseInt(workingDaysEl.textContent, 10);
-                if (isNaN(workingDays) || workingDays === 0) { alert("当月没有工作日或工作日正在加载，无法计算！"); return; }
+                
+                const manualWorkingDaysInput = document.getElementById('manual-working-days-input');
+                let workingDays;
+                if (manualWorkingDaysInput && manualWorkingDaysInput.style.display !== 'none' && parseFloat(manualWorkingDaysInput.value) > 0) {
+                    workingDays = parseFloat(manualWorkingDaysInput.value);
+                } else {
+                    workingDays = parseInt(workingDaysEl.textContent, 10);
+                }
+
+                if (isNaN(workingDays) || workingDays <= 0) { alert("当月工作日无效，无法计算！请检查自动获取或手动输入。"); return; }
                 
                 const hourlyRate = (values['position-salary'] / workingDays) / 8;
 
@@ -423,10 +443,10 @@
                 const leaveDeductionAmount = values['personal-leave-hours'] * hourlyRate;
                 
                 const grossIncome = (values['position-salary'] - leaveDeductionAmount) + values['performance-bonus'] + mealAllowance + fullAttendanceBonus + values['other-allowances'] + overtimePay;
-                const incomeForTax = grossIncome - SOCIAL_SECURITY_DEDUCTION - values['special-deduction'] - TAX_THRESHOLD;
+                const incomeForTax = grossIncome - values['social-security-deduction'] - values['special-deduction'] - TAX_THRESHOLD;
                 const taxDetails = calculateTax(incomeForTax);
                 
-                const finalSalary = grossIncome - SOCIAL_SECURITY_DEDUCTION - taxDetails.monthlyTax - values['other-deductions'];
+                const finalSalary = grossIncome - values['social-security-deduction'] - taxDetails.monthlyTax - values['other-deductions'];
                 
                 resultsEl.style.display = 'block';
                 resultsEl.innerHTML = `
@@ -477,22 +497,23 @@
                             </li>
                             <li class="deduction">
                                 <span>(-) 社保个人部分</span>
-                                <span class="value">- ¥ ${SOCIAL_SECURITY_DEDUCTION.toFixed(2)}</span>
+                                <span class="value">- ¥ ${values['social-security-deduction'].toFixed(2)}</span>
                             </li>
                             <li class="sub-item">
                                 <span>&nbsp;&nbsp;&nbsp;&nbsp;应纳税所得额</span>
                                 <span class="value">¥ ${Math.max(0, incomeForTax).toFixed(2)}</span>
-                                <small class="calculation-detail">(${grossIncome.toFixed(2)} - ${SOCIAL_SECURITY_DEDUCTION} - ${values['special-deduction']} - ${TAX_THRESHOLD})</small>
-                            </li>
-                            <li class="sub-item">
-                                <span>&nbsp;&nbsp;&nbsp;&nbsp;适用税率 / 速算扣除</span>
-                                <span class="value">${taxDetails.rate}% / ${taxDetails.quickDeduction}</span>
+                                <small class="calculation-detail">(${grossIncome.toFixed(2)} - ${values['social-security-deduction']} - ${values['special-deduction']} - ${TAX_THRESHOLD})</small>
                             </li>
                             <li class="deduction" style="font-weight: bold;">
                                 <span>(-) 本月预缴个税</span>
                                 <span class="value">- ¥ ${taxDetails.monthlyTax.toFixed(2)}</span>
-                                <small class="calculation-detail">(年累计税额 ¥${(taxDetails.annualTaxableIncome > 0 ? taxDetails.annualTax : 0).toFixed(2)} / 12)</small>
                             </li>
+                            ${taxDetails.taxBreakdown.map(b => `
+                                <li class="sub-item deduction">
+                                    <span>&nbsp;&nbsp;&nbsp;&nbsp; ${b.range} 部分 (${b.amount.toFixed(2)} 元 @ ${b.rate}%)</span>
+                                    <span class="value">- ¥ ${b.tax.toFixed(2)}</span>
+                                </li>
+                            `).join('')}
                             <li class="deduction">
                                 <span>(-) 其他合规扣款</span>
                                 <span class="value">- ¥ ${values['other-deductions'].toFixed(2)}</span>
@@ -501,18 +522,51 @@
                     </div>`;
             }
 
-            function calculateTax(taxableIncome) {
-                if (taxableIncome <= 0) return { monthlyTax: 0, rate: 0, quickDeduction: 0, annualTax: 0, annualTaxableIncome: 0 };
-                const annualTaxableIncome = taxableIncome * 12;
-                let rate = 0, quickDeduction = 0, annualTax = 0;
-                if (annualTaxableIncome <= 36000) { rate = 3; quickDeduction = 0; annualTax = annualTaxableIncome * 0.03 - quickDeduction;
-                } else if (annualTaxableIncome <= 144000) { rate = 10; quickDeduction = 2520; annualTax = annualTaxableIncome * 0.10 - quickDeduction;
-                } else if (annualTaxableIncome <= 300000) { rate = 20; quickDeduction = 16920; annualTax = annualTaxableIncome * 0.20 - quickDeduction;
-                } else if (annualTaxableIncome <= 420000) { rate = 25; quickDeduction = 31920; annualTax = annualTaxableIncome * 0.25 - quickDeduction;
-                } else if (annualTaxableIncome <= 660000) { rate = 30; quickDeduction = 52920; annualTax = annualTaxableIncome * 0.30 - quickDeduction;
-                } else if (annualTaxableIncome <= 960000) { rate = 35; quickDeduction = 85920; annualTax = annualTaxableIncome * 0.35 - quickDeduction;
-                } else { rate = 45; quickDeduction = 181920; annualTax = annualTaxableIncome * 0.45 - quickDeduction; }
-                return { monthlyTax: annualTax / 12, rate, quickDeduction, annualTax, annualTaxableIncome };
+            function calculateTax(monthlyTaxableIncome) {
+                if (monthlyTaxableIncome <= 0) return { monthlyTax: 0, rate: 0, quickDeduction: 0, taxBreakdown: [] };
+                
+                let monthlyTax = 0;
+                let rate = 0; 
+                let quickDeduction = 0;
+                let breakdown = []; // Array to store breakdown details
+                
+                // Define tax brackets with their lower bound, upper bound, and rate
+                const brackets = [
+                    { lower: 0, upper: 3000, rate: 0.03, qd: 0 },
+                    { lower: 3001, upper: 12000, rate: 0.10, qd: 210 },
+                    { lower: 12001, upper: 25000, rate: 0.20, qd: 1410 },
+                    { lower: 25001, upper: 35000, rate: 0.25, qd: 2660 },
+                    { lower: 35001, upper: 55000, rate: 0.30, qd: 4410 },
+                    { lower: 55001, upper: 80000, rate: 0.35, qd: 7160 },
+                    { lower: 80001, upper: Infinity, rate: 0.45, qd: 15160 }
+                ];
+
+                let remainingTaxable = monthlyTaxableIncome;
+
+                for (const bracket of brackets) {
+                    if (remainingTaxable <= 0) break; // No more taxable income
+                    
+                    const currentBracketLower = bracket.lower === 0 ? 0 : bracket.lower - 1; // Adjust lower bound for range calc
+                    const currentBracketUpper = bracket.upper;
+
+                    const taxableInThisBracket = Math.min(remainingTaxable, currentBracketUpper - currentBracketLower);
+                    
+                    if (taxableInThisBracket > 0) {
+                        const taxForSegment = taxableInThisBracket * bracket.rate;
+                        monthlyTax += taxForSegment;
+                        breakdown.push({
+                            range: `${bracket.lower}-${bracket.upper === Infinity ? '以上' : bracket.upper}元`,
+                            rate: bracket.rate * 100,
+                            amount: taxableInThisBracket,
+                            tax: taxForSegment
+                        });
+                        rate = bracket.rate * 100; // Keep track of the highest rate for display
+                        quickDeduction = bracket.qd; // Keep track of quick deduction for display
+                        remainingTaxable -= taxableInThisBracket;
+                    }
+                }
+                
+                return { monthlyTax: monthlyTax, rate, quickDeduction: quickDeduction, taxBreakdown: breakdown };
             }
 
             function saveData() {
@@ -568,9 +622,32 @@
                 currentLeaveTargetInput = targetInput;
                 const label = document.querySelector(`label[for=${targetInput.id}]`);
                 leaveModalTitle.textContent = `添加 ${label ? label.textContent.split('(')[0].trim() : '请假记录'}`;
-                leaveRecords = [];
-                renderLeaveRecords();
-                leaveModal.classList.add('active');
+                
+                // Load existing leave records if available
+                const existingRecordsStr = currentLeaveTargetInput.dataset.leaveRecords;
+                if (existingRecordsStr && existingRecordsStr !== '[]') {
+                    try {
+                        leaveRecords = JSON.parse(existingRecordsStr);
+                    } catch(e) {
+                        console.error("Error parsing existing leave records", e);
+                        leaveRecords = []; // Fallback to empty if parsing fails
+                    }
+                                } else {
+                                    leaveRecords = [];
+                                }
+                                
+                                // Set default date for flatpickr
+                                let defaultDate = new Date(); // Default to today
+                                if (leaveRecords.length > 0) {
+                                    // If there are existing records, default to the first one's date
+                                    defaultDate = leaveRecords[0].date; 
+                                }
+                                if (fp) { // Ensure flatpickr is initialized
+                                    fp.setDate(defaultDate, true); 
+                                }
+                
+                                renderLeaveRecords();
+                                leaveModal.classList.add('active');
             }
             function closeLeaveModal() {
                 const displayEl = document.getElementById(currentLeaveTargetInput.id + '-display');
@@ -624,7 +701,7 @@
                     if (displayEl) {
                         const dateStrings = leaveRecords.map(r => r.date.split('-').slice(1).join('/'));
                         const uniqueDays = new Set(leaveRecords.map(r => r.date)).size;
-                        displayEl.innerHTML = `已选 ${uniqueDays} 天 (${dateStrings.join(', ')}) <button type="button" class="clear-leave-btn" data-target-id="${currentLeaveTargetInput.id}" title="清除日历选择">×</button>`;
+                        displayEl.innerHTML = `<span class="leave-text-content">已选 ${uniqueDays} 天 (${dateStrings.join(', ')})</span> <button type="button" class="clear-leave-btn" data-target-id="${currentLeaveTargetInput.id}" title="清除日历选择">×</button>`;
                     }
                     saveData();
                 }
@@ -635,11 +712,12 @@
                 if (holidayApiCache[year]) return holidayApiCache[year];
                 try {
                     const response = await fetch(`https://api.jiejiariapi.com/v1/holidays/${year}`);
-                    if (!response.ok) throw new Error(`API request failed`);
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
                     holidayApiCache[year] = await response.json();
                 } catch (error) {
                     console.error(`Failed to fetch holiday data for year ${year}:`, error);
-                    holidayApiCache[year] = {};
+                    delete holidayApiCache[year]; // Clear cache for failed year
+                    throw error; // Re-throw the error
                 }
                 return holidayApiCache[year];
             }
@@ -672,7 +750,20 @@
             async function updateWorkingDays() {
                 const [year, month] = monthSelector.value.split('-').map(Number);
                 workingDaysEl.textContent = '...';
-                workingDaysEl.textContent = await getWorkingDays(year, month);
+                const manualWorkingDaysGroup = document.getElementById('manual-working-days-group');
+                const manualWorkingDaysInput = document.getElementById('manual-working-days-input');
+
+                try {
+                    const fetchedWorkingDays = await getWorkingDays(year, month);
+                    workingDaysEl.textContent = fetchedWorkingDays;
+                    manualWorkingDaysGroup.style.display = 'none'; // Hide manual input if successful
+                    manualWorkingDaysInput.value = ''; // Clear manual input
+                } catch (error) {
+                    console.error("Failed to fetch working days automatically, enabling manual input.", error);
+                    workingDaysEl.textContent = '无法获取'; // Indicate failure
+                    manualWorkingDaysGroup.style.display = 'flex'; // Show manual input
+                    manualWorkingDaysInput.value = '21'; // Default placeholder
+                }
             }
             
             function renderTaxRuleDetails() {
@@ -680,22 +771,22 @@
                 if (!taxRuleEl) return;
                 taxRuleEl.innerHTML = `<strong>个人所得税:</strong>
                     <p style="margin: 5px 0; font-size: 0.9em;">1. 先计算应纳税所得额: <br><code>应发工资 - 5000起征点 - 社保 - 专项附加扣除</code></p>
-                    <p style="margin: 5px 0; font-size: 0.9em;">2. 根据年度应纳税所得额 (月度 * 12)，对照下表确定税率和速算扣除数。</p>
+                    <p style="margin: 5px 0; font-size: 0.9em;">2. 根据月度应纳税所得额，对照下表确定税率和速算扣除数。</p>
                     <div class="tax-table">
                         <table>
-                            <thead><tr><th>级别</th><th>年度应纳税所得额</th><th>税率(%)</th><th>速算扣除数</th></tr></thead>
+                            <thead><tr><th>级别</th><th>月度应纳税所得额</th><th>税率(%)</th><th>速算扣除数</th></tr></thead>
                             <tbody>
-                                <tr><td>1</td><td>不超过36,000元</td><td>3</td><td>0</td></tr>
-                                <tr><td>2</td><td>36,000元 至 144,000元</td><td>10</td><td>2,520</td></tr>
-                                <tr><td>3</td><td>144,000元 至 300,000元</td><td>20</td><td>16,920</td></tr>
-                                <tr><td>4</td><td>300,000元 至 420,000元</td><td>25</td><td>31,920</td></tr>
-                                <tr><td>5</td><td>420,000元 至 660,000元</td><td>30</td><td>52,920</td></tr>
-                                <tr><td>6</td><td>660,000元 至 960,000元</td><td>35</td><td>85,920</td></tr>
-                                <tr><td>7</td><td>超过960,000元</td><td>45</td><td>181,920</td></tr>
+                                <tr><td>1</td><td>不超过3,000元</td><td>3</td><td>0</td></tr>
+                                <tr><td>2</td><td>3,001元 至 12,000元</td><td>10</td><td>210</td></tr>
+                                <tr><td>3</td><td>12,001元 至 25,000元</td><td>20</td><td>1,410</td></tr>
+                                <tr><td>4</td><td>25,001元 至 35,000元</td><td>25</td><td>2,660</td></tr>
+                                <tr><td>5</td><td>35,001元 至 55,000元</td><td>30</td><td>4,410</td></tr>
+                                <tr><td>6</td><td>55,001元 至 80,000元</td><td>35</td><td>7,160</td></tr>
+                                <tr><td>7</td><td>超过80,000元</td><td>45</td><td>15,160</td></tr>
                             </tbody>
                         </table>
                     </div>
-                    <p style="font-size:0.8em; color:#888;">(注: 本工具采用年税额除以12的平均估算法，与财务实际的“累计预扣法”在年度中可能存在细微差异，但年度总税额一致。)</p>
+                    <p style="font-size:0.8em; color:#888;">(注: 本工具采用按月计税法，与财务实际的“累计预扣法”在累计应纳税所得额方面的处理相同。)</p>
                 `;
             }
 
