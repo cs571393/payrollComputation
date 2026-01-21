@@ -724,7 +724,7 @@
             async function getHolidayData(year) {
                 if (holidayApiCache[year]) return holidayApiCache[year];
                 try {
-                    const response = await fetch(`https://api.jiejiariapi.com/v1/holidays/${year}`);
+                    const response = await fetch(`/api/holidays/${year}`);
                     if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
                     holidayApiCache[year] = await response.json();
                 } catch (error) {
