@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/api/holidays/:year",
-      "destination": "https://api.jiejiariapi.com/v1/holidays/:year"
-    }
-  ]
-}
